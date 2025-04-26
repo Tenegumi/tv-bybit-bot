@@ -43,7 +43,22 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
 
-# 
+# ── 기존 코드 위쪽 그대로 ──
+
+# ① 홈 경로(Ping) — 이미 추가했다면 생략
 @app.get("/")
 def home():
     return "alive", 200
+
+# ② /​hook 경로 : GET + POST 둘 다 허용  ← ★ 이 줄만 수정
+@app.route("/hook", methods=["GET", "POST"])
+def hook():
+    if request.method == "GET":
+        return "hook alive", 200          # 헬스체크용 응답
+
+    txt = request.data.decode().lower().strip()
+    a, q, *_ = txt.split()
+    reduce = "reduceonly=true" in txt
+    side   = "BUY" if a.startswith("buy") else "SELL"
+    rsp    = market(side, q, reduce)
+    return jsonify(rsp)
