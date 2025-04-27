@@ -50,15 +50,19 @@ if __name__ == "__main__":
 def home():
     return "alive", 200
 
-# ② /​hook 경로 : GET + POST 둘 다 허용  ← ★ 이 줄만 수정
+# ⬇︎ 위치 : 기존 @app.route("/hook" …) 정의 “바로 윗줄” 정도
 @app.route("/hook", methods=["GET", "POST"])
 def hook():
-    if request.method == "GET":
-        return "hook alive", 200          # 헬스체크용 응답
+    if request.method == "GET":          # ← 헬스체크용
+        return "hook alive", 200
 
     txt = request.data.decode().lower().strip()
-    a, q, *_ = txt.split()
-    reduce = "reduceonly=true" in txt
-    side   = "BUY" if a.startswith("buy") else "SELL"
-    rsp    = market(side, q, reduce)
+    parts = txt.split()
+    if len(parts) < 3:
+        return "format err", 400
+    side  = "BUY" if parts[0].startswith("buy") else "SELL"
+    qty   = parts[1]
+    reduce= "reduceonly=true" in txt
+    rsp   = market(side, qty, reduce)
     return jsonify(rsp)
+
