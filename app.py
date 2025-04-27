@@ -1,3 +1,4 @@
+# ---------- app.py ----------
 from flask import Flask, request, jsonify
 import os, time, hmac, hashlib, json, requests
 from dotenv import load_dotenv
@@ -30,39 +31,28 @@ def market(side, qty, reduce=False):
 
 app = Flask(__name__)
 
-@app.route("/hook", methods=["POST"])
-def hook():
-    txt = request.data.decode().lower().strip()
-    a,q,*_ = txt.split()
-    if a=="buy":  r = market("BUY", q)
-    else:         r = market("SELL", q, "reduceonly=true" in txt)
-    return jsonify(r)
-
-import os
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port)
-
-# ── 기존 코드 위쪽 그대로 ──
-
-# ① 홈 경로(Ping) — 이미 추가했다면 생략
+# --- 헬스체크용 기본 경로 ---
 @app.get("/")
-def home():
+def root():
     return "alive", 200
 
-# ⬇︎ 위치 : 기존 @app.route("/hook" …) 정의 “바로 윗줄” 정도
+# --- TradingView 웹훅 경로 ---
 @app.route("/hook", methods=["GET", "POST"])
 def hook():
-    if request.method == "GET":          # ← 헬스체크용
+    if request.method == "GET":          # Render 헬스체크
         return "hook alive", 200
 
     txt = request.data.decode().lower().strip()
     parts = txt.split()
     if len(parts) < 3:
         return "format err", 400
-    side  = "BUY" if parts[0].startswith("buy") else "SELL"
-    qty   = parts[1]
-    reduce= "reduceonly=true" in txt
-    rsp   = market(side, qty, reduce)
+    side   = "BUY" if parts[0].startswith("buy") else "SELL"
+    qty    = parts[1]
+    reduce = "reduceonly=true" in txt
+    rsp    = market(side, qty, reduce)
     return jsonify(rsp)
 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
+# --------------------------------
